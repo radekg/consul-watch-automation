@@ -31,12 +31,11 @@ whenRoleDef
 // -------------------------------------------------------------
 
 systemService
-  : systemServiceAction stringLiteral
-  | systemServiceAction variable
+  : systemServiceAction (stringLiteral | variable | id)
   ;
 
 systemServiceAction
-  : ( 'system_service_restart' | 'system_service_start' | 'system_service_stop' )
+  : ( 'system_service_restart' | 'system_service_start' | 'system_service_stop' | 'system_service_enable' | 'system_service_disable' )
   ;
 
 // -------------------------------------------------------------
@@ -44,7 +43,11 @@ systemServiceAction
 // -------------------------------------------------------------
 
 template
-  : 'template' (variable | stringLiteral) (variable | stringLiteral) BLOCK_START hashLikeParam* BLOCK_END ('via' exec)?
+  : 'template' (variable | stringLiteral) (variable | stringLiteral) BLOCK_START hashLikeParam* BLOCK_END via?
+  ;
+
+via
+  : 'via' exec
   ;
 
 consulServiceRegister
