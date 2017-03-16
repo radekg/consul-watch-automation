@@ -11,19 +11,19 @@ role
 // -------------------------------------------------------------
 
 consulServiceChange
-  : 'consul_service_change' BLOCK_START whenDef+ BLOCK_END
+  : 'consul_service_change' BLOCK_START onDef+ BLOCK_END
   ;
 
-whenDef
-  : 'when' (variable | integer) (variable | stringLiteral| id) BLOCK_START ( exec | ifInRole | template | systemService | consulServiceRegister )+ BLOCK_END
+onDef
+  : 'on' (variable | integer | literalStar) (variable | stringLiteral| id) BLOCK_START whenRoleDef+ BLOCK_END
   ;
 
 // -------------------------------------------------------------
 // When In Role
 // -------------------------------------------------------------
 
-ifInRole
-  : 'if_in_role' (variable | stringLiteral| id) BLOCK_START ( exec | template | systemService | consulServiceRegister )+ BLOCK_END
+whenRoleDef
+  : 'when_role' (variable | stringLiteral| id | literalStar) BLOCK_START ( exec | template | systemService | consulServiceRegister )+ BLOCK_END
   ;
 
 // -------------------------------------------------------------
@@ -92,6 +92,10 @@ stringLiteral
 
 id
   : ID
+  ;
+
+literalStar
+  : '*'
   ;
 
 // -------------------------------------------------------------

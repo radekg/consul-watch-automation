@@ -1,25 +1,15 @@
-package com.gruchalski.consul
+package com.gruchalski.consul.cdf
 
-import java.io.FileInputStream
 import java.util
 
-import com.gruchalski.consul.ConsulWatchIntegrationParser._
-import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream, ParserRuleContext}
+import com.gruchalski.consul.{ConsulSupportedScopes, ConsulWatchTrigger}
+import com.gruchalski.consul.cdf.ConsulWatchIntegrationParser._
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.collection.JavaConverters._
 
-object ConsulSupportedScopes {
-  val envScope = "env"
-}
-
-sealed trait ConsulWatchAction
-
-case class ConsulWatchTrigger(val count: Int,
-                              val service: String,
-                              val actons: util.List[ConsulWatchAction] = new util.ArrayList[ConsulWatchAction]())
-
-class ConsulVisitor(val localVars: Map[String, String] = Map.empty[String, String],
-                    val environment: Map[String, String] = Map.empty[String, String])
+class CdfVisitor(val localVars: Map[String, String] = Map.empty[String, String],
+                 val environment: Map[String, String] = Map.empty[String, String])
   extends ConsulWatchIntegrationBaseVisitor[Any] {
 
   val envVars = System.getenv().asScala.toMap ++ environment
@@ -33,6 +23,11 @@ class ConsulVisitor(val localVars: Map[String, String] = Map.empty[String, Strin
   private def errorContext(ctx: ParserRuleContext): String = {
     // add 1 to char position, parser indexes columns from 0:
     s"line ${ctx.getStart.getLine}, column ${(ctx.getStart.getCharPositionInLine+1)}"
+  }
+
+  private def expandStringLiteral(str: String): String = {
+    // TODO: implement
+    str
   }
 
   private def unpackScopedVariable(ctx: ScopedVariableContext): String = {
@@ -84,13 +79,15 @@ class ConsulVisitor(val localVars: Map[String, String] = Map.empty[String, Strin
     ctx.consulServiceChange().asScala.toList.foreach { csc =>
       visit(csc)
     }
-    ctx
+    (roles, watches)
   }
 
-  override def visitWhenDef(ctx: WhenDefContext): AnyRef = {
+  override def visitOnDef(ctx: OnDefContext): AnyRef = {
     ctx.children.asScala.toList match {
       case _ :: count :: role :: rest =>
         val countVal = count match {
+          case any: LiteralStarContext =>
+            Integer.MIN_VALUE
           case intCount: IntegerContext =>
             intCount.INT().getText.toInt
           case value: VariableContext =>
@@ -100,42 +97,21 @@ class ConsulVisitor(val localVars: Map[String, String] = Map.empty[String, Strin
           case stringValue: StringLiteralContext =>
             stringValue.STRING_LITERAL().getText
           case value: VariableContext =>
-            unpackVariable(value)
+            expandStringLiteral(unpackVariable(value))
         }
-        _watches.put((countVal, roleVal), new ConsulWatchTrigger(countVal, roleVal))
+        val watchTrigger = new ConsulWatchTrigger(countVal, roleVal)
         rest.foreach(visit(_))
+        _watches.put((countVal, roleVal), watchTrigger)
       case _ =>
         throw new RuntimeException(s"Invalid 'when' clause found at ${errorContext(ctx)}.")
     }
+
     ctx
   }
 
-  override def visitIfInRole(ctx: IfInRoleContext): AnyRef = {
-    println(" ====================> if_in_role")
+  override def visitWhenRoleDef(ctx: WhenRoleDefContext): AnyRef = {
+    println(" ====================> when_role")
     ctx
-  }
-
-}
-
-
-object Test {
-
-  def main(args: Array[String]): Unit = {
-
-    val input = new ANTLRInputStream(new FileInputStream("/Users/rad/dev/my/antlr-playground/test-files/test.cdf"))
-    val lexer = new ConsulWatchIntegrationLexer(input)
-    val tokens = new CommonTokenStream(lexer)
-    val parser = new ConsulWatchIntegrationParser(tokens)
-    val tree = parser.prog()
-    val visitor = new ConsulVisitor(environment = Map(
-      "EXPECTED_CONSENSUS_SERVERS" -> "3",
-      "SVC_NAME_ZOOKEEPER" -> "zookeeper"
-    ))
-    visitor.visit(tree)
-
-    println(s" ================> ${visitor.roles}")
-    println(s" ================> ${visitor.watches}")
-
   }
 
 }

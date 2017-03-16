@@ -10,5 +10,5 @@ antlr4GenListener in Antlr4 := true
 
 antlr4GenVisitor in Antlr4 := true
 
-antlr4PackageName in Antlr4 := Some("com.gruchalski.consul")
+antlr4PackageName in Antlr4 := Some("com.gruchalski.consul.cdf")
     
