@@ -2,26 +2,26 @@ package com.gruchalski.consul
 
 import java.io.InputStream
 
-import com.gruchalski.consul.Exceptions.{CdfParserException, ErrorLocation}
+import com.gruchalski.consul.Exceptions._
 import com.gruchalski.consul.cdf.ConsulWatchIntegrationParser._
 import com.gruchalski.consul.cdf.{ConsulWatchIntegrationLexer, ConsulWatchIntegrationParser}
 import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream, ParserRuleContext}
+import org.apache.commons.lang3.StringEscapeUtils
 
 import scala.collection.JavaConverters._
 
 object ParserHelpers {
-  def buildParserException(message: String, ctx: ParserRuleContext): CdfParserException = {
-    CdfParserException(message, errorContext(ctx))
-  }
 
-  def errorContext(ctx: ParserRuleContext): ErrorLocation = {
-    // add 1 to char position, parser indexes columns from 0:
-    ErrorLocation(ctx.getStart.getLine, ctx.getStart.getCharPositionInLine+1)
+  def unquote(str: String): String = {
+    if (str.startsWith("\"") && str.endsWith("\"")) {
+      return str.substring(1, str.length-1)
+    }
+    str
   }
 
   def expandStringLiteral(str: String): String = {
     // TODO: implement
-    str
+    StringEscapeUtils.unescapeJson(unquote(str))
   }
 }
 
@@ -38,13 +38,13 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
             case Some(data) =>
               data
             case None =>
-              throw ParserHelpers.buildParserException(s"Use of undeclared variable $$${varScope}.${varName}.", ctx)
+              throw UseOfUndefinedVariableException(s"$$${varScope}.${varName}.", Exceptions.errorContext(ctx))
           }
         } else {
-          throw ParserHelpers.buildParserException(s"Unsupported scope $$${varScope}.", ctx)
+          throw UnsupportedScopeException(s"$$${varScope}", Exceptions.errorContext(ctx))
         }
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid scoped variable.", ctx)
+        throw CdfParserException(s"Invalid scoped variable.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -53,7 +53,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
     localVars.get(varName) match {
       case Some(data) => data
       case None =>
-        throw ParserHelpers.buildParserException(s"Use of undeclared variable ${varName}.", ctx)
+        throw UseOfUndefinedVariableException(s"local ${varName}", Exceptions.errorContext(ctx))
     }
   }
 
@@ -63,15 +63,18 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
     } else if (ctx.getChild(0).isInstanceOf[UnscopedVariableContext]) {
       unpackUnscopedVariable(ctx.unscopedVariable())
     } else {
-      throw ParserHelpers.buildParserException(s"Invalid variable declaration.", ctx)
+      throw CdfParserException(s"Invalid variable declaration.", Exceptions.errorContext(ctx))
     }
   }
 
   def parseProg(ctx: ProgContext): ProgramTree = {
+    val roles = ctx.role().asScala.map(parseRole(_)).toList
+    if (roles.isEmpty) {
+      throw NoRolesException()
+    }
     ProgramTree(
-      roles = ctx.role().asScala.map(parseRole(_)).toList,
-      consulWatchTriggers = ctx.consulServiceChange().asScala.toList.map(parseConsulServiceChange(_)).reduce(_ ++ _)
-    )
+      roles = roles,
+      consulWatchTriggers = ctx.consulServiceChange().asScala.toList.map(parseConsulServiceChange(_)).reduce(_ ++ _) )
   }
 
   def parseRole(ctx: RoleContext): String = {
@@ -109,7 +112,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
           parsed.role -> parsed
         }.toMap)
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid 'on' clause. Valid clause: on count role { ... }.", ctx)
+        throw CdfParserException(s"Invalid 'on' clause. Valid clause: on count role { ... }.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -145,7 +148,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
         })
 
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid 'when_role' clause. Valid clause: when_role role { ... }.", ctx)
+        throw CdfParserException(s"Invalid 'when_role' clause. Valid clause: when_role role { ... }.", Exceptions.errorContext(ctx))
     }
     result
   }
@@ -161,7 +164,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
         }
         ExecAction(path = pathValue)
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid 'exec' clause. Valid clause: exec path.", ctx)
+        throw CdfParserException(s"Invalid 'exec' clause. Valid clause: exec path.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -181,10 +184,10 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
           SystemServiceAction(SystemServiceActions(actionValue), serviceValue)
         } catch {
           case e: UnsupportedSystemActionException =>
-            throw ParserHelpers.buildParserException(s"Invalid service action.", ctx)
+            throw CdfParserException(s"Invalid service action.", Exceptions.errorContext(ctx))
         }
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid system action clause.", ctx)
+        throw CdfParserException(s"Invalid system action clause.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -209,7 +212,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
         }
         CreateConsulServiceAction(serviceValue, bodies.headOption.getOrElse(Map.empty[String, Any]))
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid consul_service_register action.", ctx)
+        throw CdfParserException(s"Invalid 'on' clause. Valid clause: on count role { ... }.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -248,7 +251,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
 
         TemplateAction(sourceValue, destinationValue, params=bodies.headOption.getOrElse(Map.empty[String, Any]), via=vias.headOption)
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid template clause.", ctx)
+        throw CdfParserException(s"Invalid template clause.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -259,10 +262,10 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
           case exec: ExecContext =>
             parseExec(exec)
           case _ =>
-            throw ParserHelpers.buildParserException(s"Invalid via clause.", ctx)
+            throw CdfParserException(s"Invalid via clause.", Exceptions.errorContext(ctx))
         }
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid via clause.", ctx)
+        throw CdfParserException(s"Invalid via clause.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -281,7 +284,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
             None
         }
       case _ =>
-        throw ParserHelpers.buildParserException(s"Invalid pair found.", ctx)
+        throw CdfParserException(s"Invalid pair found.", Exceptions.errorContext(ctx))
     }
   }
 
@@ -304,7 +307,9 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
           case v4r: VariableContext =>
             Some(unpackVariable(v4r))
           case num: NumberContext =>
-            Some(num.getText)
+            Some(num.getText.toDouble)
+          case int: IntegerContext =>
+            Some(int.getText.toInt)
           case arr: ArrayContext =>
             Some(parseArray(arr))
           case obj: ObjContext =>

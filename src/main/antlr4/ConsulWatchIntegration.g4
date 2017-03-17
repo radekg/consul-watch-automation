@@ -84,6 +84,7 @@ value
   : stringLiteral
   | variable
   | number
+  | integer
   | array
   | obj
   | id
@@ -102,13 +103,12 @@ unscopedVariable
   : '$' id
   ;
 
-number
-  : INT
-  | NUMBER
-  ;
-
 integer
   : INT
+  ;
+
+number
+  : NUMBER
   ;
 
 stringLiteral
@@ -142,7 +142,6 @@ LETTER
 NUMBER
   : '-'? INT '.' [0-9]+ EXP?
   | '-'? INT EXP
-  | '-'? INT
   ;
 
 EXP
@@ -150,7 +149,7 @@ EXP
    ;
 
 INT
-  : '0' | [1-9] [0-9]*
+  : '-'? '0' | [1-9] [0-9]*
   ;
 
 LINE_COMMENT

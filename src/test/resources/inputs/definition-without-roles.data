@@ -1,0 +1,9 @@
+# Used to test parsing without roles.
+
+consul_service_change {
+    on 1 zookeeper {
+        when_role zookeeper {
+            exec "ping localhost"
+        }
+    }
+}
