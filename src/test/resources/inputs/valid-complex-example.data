@@ -10,7 +10,9 @@ consul_service_change {
 
     when_role zookeeper {
 
-      exec "/bin/bach -c 'ping google.com'"
+      exec "/bin/bash -c 'ping google.com'"
+
+      exec "/bin/bash -c 'ping google.com'" only_if "stat /etc/some/action"
 
       template "$env.PROGRAMS_DIR/zookeeper/templates/tmpl.zoo.cfg" "/etc/zookeeper/zoo.cfg" {
         tickTime:   $env.ZOOKEEPER_TICK_TIME
