@@ -65,7 +65,8 @@ class ParserTests extends WordSpec with Matchers {
           (3, "zookeeper") -> ConsulServiceWatch(3, "zookeeper",
             Map(Some("zookeeper") ->
               ConsulServiceWatchRestriction(Some("zookeeper"), List(
-                ExecAction("/bin/bach -c 'ping google.com'"),
+                ExecAction("/bin/bash -c 'ping google.com'"),
+                ExecAction("/bin/bash -c 'ping google.com'", Some("stat /etc/some/action")),
                 TemplateAction("$env.PROGRAMS_DIR/zookeeper/templates/tmpl.zoo.cfg", "/etc/zookeeper/zoo.cfg", Map(
                   "tickTime" -> "2000",
                   "dataDir" -> "/opt/zookeeper/data",
