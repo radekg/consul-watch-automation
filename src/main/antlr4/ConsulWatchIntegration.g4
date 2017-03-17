@@ -59,7 +59,11 @@ consulServiceRegister
 // -------------------------------------------------------------
 
 exec
-  : 'exec' (variable | stringLiteral)
+  : 'exec' (variable | stringLiteral) onlyIf?
+  ;
+
+onlyIf
+  : 'only_if' (variable | stringLiteral)
   ;
 
 // -------------------------------------------------------------

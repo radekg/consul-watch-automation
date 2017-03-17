@@ -29,7 +29,7 @@ object SystemServiceActions {
 
 sealed trait ConsulWatchAction
 
-final case class ExecAction(val path: String) extends ConsulWatchAction
+final case class ExecAction(val path: String, val onlyIf: Option[String] = None) extends ConsulWatchAction
 
 final case class SystemServiceAction(val action: SystemServiceActions.Action,
                                      val serviceName: String)

@@ -9,6 +9,7 @@ import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream, ParserRuleCont
 import org.apache.commons.lang3.StringEscapeUtils
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 object ParserHelpers {
 
@@ -162,9 +163,34 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
           case value: VariableContext =>
             unpackVariable(value)
         }
-        ExecAction(path = pathValue)
+
+        val onlyIfs = rest.map { item =>
+          item match {
+            case oif: OnlyIfContext =>
+              Some(parseOnlyIf(oif))
+            case anyOther =>
+              None
+          }
+        }
+
+        ExecAction(path = pathValue, onlyIf = Try(onlyIfs.head).getOrElse(None))
       case _ =>
         throw CdfParserException(s"Invalid 'exec' clause. Valid clause: exec path.", Exceptions.errorContext(ctx))
+    }
+  }
+
+  def parseOnlyIf(ctx: OnlyIfContext): String = {
+    ctx.children.asScala.toList match {
+      case _ :: path  :: rest =>
+        var pathValue = path match {
+          case stringValue: StringLiteralContext =>
+            ParserHelpers.expandStringLiteral(stringValue.STRING_LITERAL().getText)
+          case value: VariableContext =>
+            unpackVariable(value)
+        }
+        pathValue
+      case _ =>
+        throw CdfParserException(s"Invalid 'only_if' clause. Valid clause: only_if path.", Exceptions.errorContext(ctx))
     }
   }
 
