@@ -29,24 +29,26 @@ object SystemServiceActions {
 
 sealed trait ConsulWatchAction
 
-sealed trait ActionWithArguments extends ConsulWatchAction {
-  val arguments: util.Map[String, Any]
-}
-
 final case class ExecAction(val path: String) extends ConsulWatchAction
-final case class SystemServiceAction(val action: SystemServiceActions.Action, val serviceName: String) extends ConsulWatchAction
-final case class CreateConsulServiceAction(val serviceName: String, val arguments: util.Map[String, Any] = new util.HashMap[String, Any]())
-  extends ActionWithArguments
+
+final case class SystemServiceAction(val action: SystemServiceActions.Action,
+                                     val serviceName: String)
+  extends ConsulWatchAction
+
+final case class CreateConsulServiceAction(val serviceName: String,
+                                           val params: Map[String, Any] = Map.empty[String, Any])
+  extends ConsulWatchAction
 final case class TemplateAction(val source: String,
                                 val destination: String,
-                                val arguments: util.Map[String, Any] = new util.HashMap[String, Any](),
-                                val via: Option[String] = None)
-  extends ActionWithArguments
+                                val params: Map[String, Any] = Map.empty[String, Any],
+                                val via: Option[ExecAction] = None)
+  extends ConsulWatchAction
 
-case class ConsulWatchTriggerScope(val role: Option[String], actions: util.List[ConsulWatchAction] = new util.ArrayList[ConsulWatchAction]())
+case class ConsulServiceWatchRestriction(val role: Option[String],
+                                         val actions: List[ConsulWatchAction] = List.empty[ConsulWatchAction])
 
-case class ConsulWatchTrigger(val count: Int,
+case class ConsulServiceWatch(val count: Int,
                               val service: String,
-                              val scopes: util.Map[Option[String], ConsulWatchTriggerScope] = new util.HashMap[Option[String], ConsulWatchTriggerScope]())
+                              val scopes: Map[Option[String], ConsulServiceWatchRestriction] = Map.empty[Option[String], ConsulServiceWatchRestriction])
 
-case class ProgramTree(val roles: List[String], val consulWatchTriggers: Map[Tuple2[Int, String], ConsulWatchTrigger])
+case class ProgramTree(val roles: List[String], val consulWatchTriggers: Map[Tuple2[Int, String], ConsulServiceWatch])

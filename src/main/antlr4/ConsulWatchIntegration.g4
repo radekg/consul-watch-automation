@@ -11,11 +11,11 @@ role
 // -------------------------------------------------------------
 
 consulServiceChange
-  : 'consul_service_change' BLOCK_START onDef+ BLOCK_END
+  : 'consul_service_change' '{' onDef+ '}'
   ;
 
 onDef
-  : 'on' (variable | integer | literalStar) (variable | stringLiteral| id) BLOCK_START whenRoleDef+ BLOCK_END
+  : 'on' (variable | integer | literalStar) (variable | stringLiteral| id) '{' whenRoleDef+ '}'
   ;
 
 // -------------------------------------------------------------
@@ -23,7 +23,7 @@ onDef
 // -------------------------------------------------------------
 
 whenRoleDef
-  : 'when_role' (variable | stringLiteral| id | literalStar) BLOCK_START ( exec | template | systemService | consulServiceRegister )+ BLOCK_END
+  : 'when_role' (variable | stringLiteral| id | literalStar) '{' ( exec | template | systemService | consulServiceRegister )+ '}'
   ;
 
 // -------------------------------------------------------------
@@ -43,7 +43,7 @@ systemServiceAction
 // -------------------------------------------------------------
 
 template
-  : 'template' (variable | stringLiteral) (variable | stringLiteral) BLOCK_START hashLikeParam* BLOCK_END via?
+  : 'template' (variable | stringLiteral) (variable | stringLiteral) obj via?
   ;
 
 via
@@ -51,7 +51,7 @@ via
   ;
 
 consulServiceRegister
-  : 'consul_service_register' (variable | stringLiteral | id) BLOCK_START hashLikeParam* BLOCK_END
+  : 'consul_service_register' (variable | stringLiteral | id) obj
   ;
 
 // -------------------------------------------------------------
@@ -66,10 +66,27 @@ exec
 // Common
 // -------------------------------------------------------------
 
-hashLikeParam
-  : id ':' stringLiteral
-  | id ':' variable
-  | id ':' integer
+obj
+  : '{' pair (pair)* '}'
+  | '{' '}'
+  ;
+
+pair
+  : id ':' value
+  ;
+
+array
+  : '[' value (',' value)* ']'
+  | '[' ']'
+  ;
+
+value
+  : stringLiteral
+  | variable
+  | number
+  | array
+  | obj
+  | id
   ;
 
 variable
@@ -83,6 +100,11 @@ scopedVariable
 
 unscopedVariable
   : '$' id
+  ;
+
+number
+  : INT
+  | NUMBER
   ;
 
 integer
@@ -109,14 +131,6 @@ STRING_LITERAL
   : '"' (~('"' | '\\' | '\r' | '\n') | '\\' ('"' | '\\'))* '"'
   ;
 
-BLOCK_START
-  : '{'
-  ;
-
-BLOCK_END
-  : '}'
-  ;
-
 ID
   : LETTER (LETTER)*
   ;
@@ -125,8 +139,18 @@ LETTER
   : [a-zA-Z\u0080-\u00FF_-]
   ;
 
+NUMBER
+  : '-'? INT '.' [0-9]+ EXP?
+  | '-'? INT EXP
+  | '-'? INT
+  ;
+
+EXP
+   : [Ee] [+\-]? INT
+   ;
+
 INT
-  : [0-9]+
+  : '0' | [1-9] [0-9]*
   ;
 
 LINE_COMMENT
