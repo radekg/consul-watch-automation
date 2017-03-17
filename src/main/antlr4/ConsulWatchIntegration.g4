@@ -1,9 +1,13 @@
 grammar ConsulWatchIntegration;
  
-prog: role* consulServiceChange+;
+prog: role* logDirective? consulServiceChange+;
 
 role
   : 'role' id
+  ;
+
+logDirective
+  : 'log' (variable | stringLiteral)
   ;
 
 // -------------------------------------------------------------
