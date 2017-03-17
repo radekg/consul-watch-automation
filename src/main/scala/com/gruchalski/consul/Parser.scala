@@ -75,11 +75,27 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
     }
     ProgramTree(
       roles = roles,
+      log = Try(Some(parseLogDirective(ctx.logDirective()))).getOrElse(None),
       consulWatchTriggers = ctx.consulServiceChange().asScala.toList.map(parseConsulServiceChange(_)).reduce(_ ++ _) )
   }
 
   def parseRole(ctx: RoleContext): String = {
     ctx.id().ID().getText
+  }
+
+  def parseLogDirective(ctx: LogDirectiveContext): LogDirective = {
+    ctx.children.asScala.toList match {
+      case _ :: location :: _ =>
+        val path = location match {
+          case stringValue: StringLiteralContext =>
+            ParserHelpers.expandStringLiteral(stringValue.STRING_LITERAL().getText)
+          case value: VariableContext =>
+            unpackVariable(value)
+        }
+        LogDirective(path)
+      case _ =>
+        throw CdfParserException(s"Invalid 'log' directive. Valid directive: log path.", Exceptions.errorContext(ctx))
+    }
   }
 
   def parseConsulServiceChange(ctx: ConsulServiceChangeContext): Map[Tuple2[Int, String], ConsulServiceWatch] = {

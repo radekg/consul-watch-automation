@@ -51,4 +51,8 @@ case class ConsulServiceWatch(val count: Int,
                               val service: String,
                               val scopes: Map[Option[String], ConsulServiceWatchRestriction] = Map.empty[Option[String], ConsulServiceWatchRestriction])
 
-case class ProgramTree(val roles: List[String], val consulWatchTriggers: Map[Tuple2[Int, String], ConsulServiceWatch])
+case class LogDirective(val path: String)
+
+case class ProgramTree(val roles: List[String],
+                       val consulWatchTriggers: Map[Tuple2[Int, String], ConsulServiceWatch],
+                       val log: Option[LogDirective] = None)

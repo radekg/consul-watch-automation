@@ -1,6 +1,8 @@
 role zookeeper
 role mesos-master
 
+log "/var/log/provisioning.log"
+
 # This is a Consul service handler...
 consul_service_change {
 

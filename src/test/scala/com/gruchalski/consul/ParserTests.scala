@@ -61,6 +61,7 @@ class ParserTests extends WordSpec with Matchers {
               new ANTLRInputStream(is)))).prog()
         val result = new Parser(localVars, environment).parseProg(prog)
         result.roles shouldBe List("zookeeper", "mesos-master")
+        result.log should matchPattern { case Some(_) => }
         result.consulWatchTriggers shouldBe Map(
           (3, "zookeeper") -> ConsulServiceWatch(3, "zookeeper",
             Map(Some("zookeeper") ->
