@@ -1,0 +1,39 @@
+role zookeeper
+role mesos-master
+
+# This is a Consul service handler...
+consul_service_change {
+
+  #on 3 $env.SVC_NAME_ZOOKEEPER {
+  #on * $env.SVC_NAME_ZOOKEEPER {
+  on $env.EXPECTED_CONSENSUS_SERVERS $env.SVC_NAME_ZOOKEEPER {
+
+    when_role zookeeper {
+
+      exec "/bin/bach -c 'ping google.com'"
+
+      template "$env.PROGRAMS_DIR/zookeeper/templates/tmpl.zoo.cfg" "/etc/zookeeper/zoo.cfg" {
+        tickTime:   $env.ZOOKEEPER_TICK_TIME
+        dataDir:    $env.ZOOKEEPER_DATA_DIR
+        clientPort: $env.ZOOKEEPER_CLIENT_PORT
+        initLimit:  $env.ZOOKEEPER_INIT_LIMIT
+        syncLimit:  $env.ZOOKEEPER_SYNC_LIMIT
+        ports:      [ 1, 2, 3 ]
+      } via exec "$env.PROGRAMS_DIR/mesos-master/helpers/append-server-info"
+
+      template "$env.PROGRAMS_DIR/zookeeper/templates/tmpl.myid" "/etc/zookeeper/myid" {
+        serverId:   $env.SERVER_ID
+      }
+
+      system_service_start $env.SVC_NAME_ZOOKEEPER
+
+      consul_service_register $env.SVC_NAME_MESOS_MASTER_ZK {
+        id:       "Escaped quotes \" must work"
+        address:  "zk://$consul.service-adresses-list$env.MESOS_ZK_PATH"
+      }
+
+    }
+
+  }
+
+}

@@ -1,0 +1,10 @@
+{
+    simpleString: "this is a string"
+    aVariable: $env.A_VARIABLE
+    numericValue: -1.234
+    withInteger: 1
+    anArray: [1,2, $env.VARIABLE_IN_ARRAY]
+    anObject: {
+        aNestedObjectKey: with-an-id
+    }
+}
