@@ -1,0 +1,30 @@
+{
+  "node_name": "support-node",
+  "rejoin_after_leave": false,
+  "datacenter": "support",
+  "log_level": "DEBUG",
+  "data_dir": "./consul",
+  "server": true,
+  "bootstrap_expect": 1,
+  "retry_join": [
+    "127.0.0.1"
+  ],
+  "addresses": {
+    "dns": "127.0.0.1",
+    "http": "127.0.0.1",
+    "https": "127.0.0.1",
+    "rpc": "127.0.0.1"
+  },
+  "ports": {
+    "server": 8300,
+    "serf_lan": 8301,
+    "serf_wan": 8302,
+    "rpc": 8400,
+    "http": 8500,
+    "https": 8543,
+    "dns": 8600
+  },
+  "bind_addr": "127.0.0.1",
+  "client_addr": "127.0.0.1",
+  "leave_on_terminate": true
+}
