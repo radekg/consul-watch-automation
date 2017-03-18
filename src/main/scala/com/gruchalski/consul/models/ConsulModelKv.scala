@@ -8,7 +8,8 @@ case class ConsulModelKv(val key: String,
                          val modifyIndex: Long,
                          val lockIndex: Long,
                          val flags: Int,
-                         val value: String)
+                         val value: String,
+                         val session: Option[String] = None)
 
 trait ConsulModelKvParser {
   implicit val consulModelKvFormat: Format[ConsulModelKv] = (
@@ -17,6 +18,7 @@ trait ConsulModelKvParser {
       (__ \ "ModifyIndex").format[Long] and
       (__ \ "LockIndex").format[Long] and
       (__ \ "Flags").format[Int] and
-      (__ \ "Value").format[String]
+      (__ \ "Value").format[String] and
+      (__ \ "Session").formatNullable[String]
     ) (ConsulModelKv.apply, unlift(ConsulModelKv.unapply))
 }
