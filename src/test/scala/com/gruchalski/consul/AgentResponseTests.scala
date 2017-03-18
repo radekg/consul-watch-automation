@@ -6,206 +6,535 @@ import play.api.libs.json.Json
 
 class AgentResponseTests extends WordSpec
   with Matchers
-  with AgentKeyResponseParser
-  with AgentNodeResponseParser
-  with ServiceWatchParser
-  with AgentEventResponseParser
+  with ConsulModelEventParser
+  with ConsulModelKvParser
+  with ConsulModelHealthCheckParser
+  with ConsulModelServiceHealthCheckParser
+  with ConsulModelNodeParser
+  with ConsulModelNodeExtendedParser
+  with ConsulModelServiceParser
   with Inside {
 
   "Agent response" must {
-    "parse" when {
 
-      "given a GET /v1/catalog/services response" ignore {
+    "parse event response" when {
+
+      "given a GET /v1/event/list" in {
+
+        val jsonData =
+          """
+            |[
+            |  {
+            |    "ID": "a53d85eb-b4d7-0d17-fff5-05925c6ac0ec",
+            |    "Name": "event-name",
+            |    "Payload": null,
+            |    "NodeFilter": "",
+            |    "ServiceFilter": "",
+            |    "TagFilter": "",
+            |    "Version": 1,
+            |    "LTime": 2
+            |  },
+            |  {
+            |    "ID": "a53d85eb-b4d7-0d17-fff5-05925c6ac0ee",
+            |    "Name": "event-name",
+            |    "Payload": "with-payload",
+            |    "NodeFilter": "",
+            |    "ServiceFilter": "",
+            |    "TagFilter": "",
+            |    "Version": 1,
+            |    "LTime": 3
+            |  }
+            |]
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelEvent]]) {
+          case Some(list) =>
+            list shouldBe List(
+              ConsulModelEvent(
+                id = "a53d85eb-b4d7-0d17-fff5-05925c6ac0ec",
+                name = "event-name",
+                nodeFilter = "",
+                serviceFilter = "",
+                tagFilter = "",
+                version = 1,
+                ltime = 2
+              ),
+              ConsulModelEvent(
+                id = "a53d85eb-b4d7-0d17-fff5-05925c6ac0ee",
+                name = "event-name",
+                nodeFilter = "",
+                serviceFilter = "",
+                tagFilter = "",
+                version = 1,
+                ltime = 3,
+                payload = Some("with-payload")
+              )
+            )
+        }
 
       }
 
-      "given a GET /v1/health/service/:service response" in {
+    }
+
+    "parse catalog response" when {
+
+      "given a GET /v1/catalog/datacenters" in {
+        val jsonData =
+          """
+            |[
+            |  "support"
+            |]
+          """.stripMargin
+        inside(Json.parse(jsonData).asOpt[List[String]]) {
+          case Some(data) =>
+            data shouldBe List("support")
+        }
+      }
+
+      "given a GET /v1/catalog/nodes" in {
+
+        val jsonData =
+          """
+            |[
+            |  {
+            |    "ID": "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+            |    "Node": "support-node",
+            |    "Address": "127.0.0.1",
+            |    "TaggedAddresses": {
+            |      "lan": "127.0.0.1",
+            |      "wan": "127.0.0.1"
+            |    },
+            |    "Meta": {},
+            |    "CreateIndex": 4,
+            |    "ModifyIndex": 5
+            |  }
+            |]
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelNode]]) {
+          case Some(list) =>
+            list.head shouldBe ConsulModelNode(
+              id = "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+              node = "support-node",
+              address = "127.0.0.1",
+              taggedAddresses = ConsulModelTaggedAddresses(
+                lan = "127.0.0.1",
+                wan = "127.0.0.1"
+              ),
+              createIndex = Some(4),
+              modifyIndex = Some(5)
+            )
+        }
+
+      }
+
+      "given a GET /v1/catalog/services" in {
+        val jsonData =
+          """
+            |{
+            |  "consul": [],
+            |  "support-service": []
+            |}
+          """.stripMargin
+        inside(Json.parse(jsonData).asOpt[Map[String, List[String]]]) {
+          case Some(data) =>
+            data shouldBe Map(
+              "consul" -> List.empty[String],
+              "support-service" -> List.empty[String]
+            )
+        }
+      }
+
+      "given a GET /v1/catalog/service/:service" in {
+        val jsonData =
+          """
+            |[
+            |  {
+            |    "ID": "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+            |    "Node": "support-node",
+            |    "Address": "127.0.0.1",
+            |    "TaggedAddresses": {
+            |      "lan": "127.0.0.1",
+            |      "wan": "127.0.0.1"
+            |    },
+            |    "NodeMeta": {},
+            |    "ServiceID": "support-service.1",
+            |    "ServiceName": "support-service",
+            |    "ServiceTags": [],
+            |    "ServiceAddress": "127.0.0.1",
+            |    "ServicePort": 0,
+            |    "ServiceEnableTagOverride": false,
+            |    "CreateIndex": 6,
+            |    "ModifyIndex": 6
+            |  }
+            |]
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelService]]) {
+          case Some(list) =>
+            list.head shouldBe ConsulModelService(
+              id = "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+              node = "support-node",
+              address = "127.0.0.1",
+              taggedAddresses = ConsulModelTaggedAddresses(
+                lan = "127.0.0.1",
+                wan = "127.0.0.1"
+              ),
+              serviceId = "support-service.1",
+              serviceName = "support-service",
+              serviceTags = List.empty[String],
+              serviceAddress = "127.0.0.1",
+              servicePort = 0,
+              serviceEnableTagOverride = false,
+              createIndex = Some(6),
+              modifyIndex = Some(6)
+            )
+        }
+      }
+
+      "given a GET /v1/catalog/node/:node" in {
+        val jsonData =
+          """
+            |{
+            |  "Node": {
+            |    "ID": "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+            |    "Node": "support-node",
+            |    "Address": "127.0.0.1",
+            |    "TaggedAddresses": {
+            |      "lan": "127.0.0.1",
+            |      "wan": "127.0.0.1"
+            |    },
+            |    "Meta": {},
+            |    "CreateIndex": 4,
+            |    "ModifyIndex": 5
+            |  },
+            |  "Services": {
+            |    "consul": {
+            |      "ID": "consul",
+            |      "Service": "consul",
+            |      "Tags": [],
+            |      "Address": "",
+            |      "Port": 8300,
+            |      "EnableTagOverride": false,
+            |      "CreateIndex": 4,
+            |      "ModifyIndex": 5
+            |    },
+            |    "support-service.1": {
+            |      "ID": "support-service.1",
+            |      "Service": "support-service",
+            |      "Tags": [],
+            |      "Address": "127.0.0.1",
+            |      "Port": 0,
+            |      "EnableTagOverride": false,
+            |      "CreateIndex": 6,
+            |      "ModifyIndex": 6
+            |    }
+            |  }
+            |}
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[ConsulModelNodeExtended]) {
+          case Some(data) =>
+            data shouldBe ConsulModelNodeExtended(
+              node = ConsulModelNode(
+                id = "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+                node = "support-node",
+                address = "127.0.0.1",
+                taggedAddresses = ConsulModelTaggedAddresses(
+                  lan = "127.0.0.1",
+                  wan = "127.0.0.1"
+                ),
+                createIndex = Some(4),
+                modifyIndex = Some(5)
+              ),
+              services = Map(
+                "consul" -> ConsulModelHealthCheckService(
+                  id = "consul",
+                  service = "consul",
+                  tags = List.empty[String],
+                  address = "",
+                  port = 8300,
+                  enableTagOverride = false,
+                  createIndex = Some(4),
+                  modifyIndex = Some(5)
+                ),
+                "support-service.1" -> ConsulModelHealthCheckService(
+                  id = "support-service.1",
+                  service = "support-service",
+                  tags = List.empty[String],
+                  address = "127.0.0.1",
+                  port = 0,
+                  enableTagOverride = false,
+                  createIndex = Some(6),
+                  modifyIndex = Some(6)
+                )
+              )
+            )
+        }
+      }
+
+    }
+
+    "parse k/v response" when {
+
+      "given a GET /v1/kv/:key" in {
+
+        val jsonData =
+          """
+            |[
+            |  {
+            |    "LockIndex": 0,
+            |    "Key": "some-key",
+            |    "Flags": 0,
+            |    "Value": "c29tZS1kYXRh",
+            |    "CreateIndex": 256,
+            |    "ModifyIndex": 256
+            |  }
+            |]
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelKv]]) {
+          case Some(list) =>
+            list shouldBe List(
+              ConsulModelKv(
+                lockIndex = 0,
+                key = "some-key",
+                flags = 0,
+                value = "c29tZS1kYXRh",
+                createIndex = 256,
+                modifyIndex = 256
+              )
+            )
+        }
+
+      }
+
+    }
+
+    "parse health check response" when {
+
+      "given a GET /v1/health/node/:node" in {
+
+        val jsonData =
+          """
+            |[
+            |  {
+            |    "Node": "support-node",
+            |    "CheckID": "serfHealth",
+            |    "Name": "Serf Health Status",
+            |    "Status": "passing",
+            |    "Notes": "",
+            |    "Output": "Agent alive and reachable",
+            |    "ServiceID": "",
+            |    "ServiceName": "",
+            |    "CreateIndex": 4,
+            |    "ModifyIndex": 4
+            |  },
+            |  {
+            |    "Node": "support-node",
+            |    "CheckID": "service:support-service.1",
+            |    "Name": "Service 'support-service' check",
+            |    "Status": "passing",
+            |    "Notes": "",
+            |    "Output": "1\n",
+            |    "ServiceID": "support-service.1",
+            |    "ServiceName": "support-service",
+            |    "CreateIndex": 6,
+            |    "ModifyIndex": 9
+            |  },
+            |  {
+            |    "Node": "support-node",
+            |    "CheckID": "simple",
+            |    "Name": "Simple test check",
+            |    "Status": "passing",
+            |    "Notes": "",
+            |    "Output": "1\n",
+            |    "ServiceID": "",
+            |    "ServiceName": "",
+            |    "CreateIndex": 7,
+            |    "ModifyIndex": 11
+            |  }
+            |]
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelHealthCheck]]) {
+          case Some(list) =>
+            list.head shouldBe ConsulModelHealthCheck(
+              node = "support-node",
+              checkId = "serfHealth",
+              name = "Serf Health Status",
+              status = "passing",
+              notes = "",
+              output = "Agent alive and reachable",
+              serviceId = "",
+              serviceName = "",
+              createIndex = Some(4),
+              modifyIndex = Some(4)
+            )
+        }
+
+      }
+
+      "given a GET /v1/health/checks/:service" in {
+
+        val jsonData =
+          """
+            |[
+            |  {
+            |    "Node": "support-node",
+            |    "CheckID": "service:support-service.1",
+            |    "Name": "Service 'support-service' check",
+            |    "Status": "passing",
+            |    "Notes": "",
+            |    "Output": "1",
+            |    "ServiceID": "support-service.1",
+            |    "ServiceName": "support-service",
+            |    "CreateIndex": 6,
+            |    "ModifyIndex": 9
+            |  }
+            |]
+          """.stripMargin
+
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelHealthCheck]]) {
+          case Some(list) =>
+            list.head shouldBe ConsulModelHealthCheck(
+                node = "support-node",
+                checkId = "service:support-service.1",
+                name = "Service 'support-service' check",
+                status = "passing",
+                notes = "",
+                output = "1",
+                serviceId = "support-service.1",
+                serviceName = "support-service",
+                createIndex = Some(6),
+                modifyIndex = Some(9)
+              )
+        }
+      }
+
+
+      "given a GET /v1/health/service/:service" in {
 
         val jsonData =
           """
             |[
             |  {
             |    "Node": {
-            |      "Node": "foobar",
-            |      "Address": "10.1.10.12"
+            |      "ID": "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+            |      "Node": "support-node",
+            |      "Address": "127.0.0.1",
+            |      "TaggedAddresses": {
+            |        "lan": "127.0.0.1",
+            |        "wan": "127.0.0.1"
+            |      },
+            |      "Meta": {},
+            |      "CreateIndex": 4,
+            |      "ModifyIndex": 5
             |    },
             |    "Service": {
-            |      "ID": "redis",
-            |      "Service": "redis",
-            |      "Tags": null,
-            |      "Port": 8000
+            |      "ID": "support-service.1",
+            |      "Service": "support-service",
+            |      "Tags": [],
+            |      "Address": "127.0.0.1",
+            |      "Port": 0,
+            |      "EnableTagOverride": false,
+            |      "CreateIndex": 6,
+            |      "ModifyIndex": 6
             |    },
             |    "Checks": [
             |      {
-            |        "Node": "foobar",
-            |        "CheckID": "service:redis",
-            |        "Name": "Service 'redis' check",
-            |        "Status": "passing",
-            |        "Notes": "",
-            |        "Output": "",
-            |        "ServiceID": "redis",
-            |        "ServiceName": "redis"
-            |      },
-            |      {
-            |        "Node": "foobar",
+            |        "Node": "support-node",
             |        "CheckID": "serfHealth",
             |        "Name": "Serf Health Status",
             |        "Status": "passing",
             |        "Notes": "",
-            |        "Output": "",
+            |        "Output": "Agent alive and reachable",
             |        "ServiceID": "",
-            |        "ServiceName": ""
+            |        "ServiceName": "",
+            |        "CreateIndex": 4,
+            |        "ModifyIndex": 4
             |      }
             |    ]
             |  }
             |]
           """.stripMargin
 
-        inside(Json.parse(jsonData).asOpt[List[ServiceWatch]]) {
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelServiceHealthCheck]]) {
           case Some(list) =>
-            list.head.node shouldBe AgentNodeResponse("foobar", "10.1.10.12")
-            list.head.service shouldBe ServiceWatchService("redis", "redis", None, 8000)
-            list.head.checks.get.size shouldBe 2
+            list.head shouldBe ConsulModelServiceHealthCheck(
+              node = ConsulModelNode(
+                id = "622d2470-c34d-31f9-a62b-6aa9a3c6a3cd",
+                node = "support-node",
+                address = "127.0.0.1",
+                taggedAddresses = ConsulModelTaggedAddresses(
+                  lan = "127.0.0.1",
+                  wan = "127.0.0.1"
+                ),
+                createIndex = Some(4),
+                modifyIndex = Some(5)
+              ),
+              service = ConsulModelHealthCheckService(
+                id = "support-service.1",
+                service = "support-service",
+                tags = List.empty[String],
+                address = "127.0.0.1",
+                port = 0,
+                enableTagOverride = false,
+                createIndex = Some(6),
+                modifyIndex = Some(6)
+              ),
+              checks = List(ConsulModelHealthCheck(
+                node = "support-node",
+                checkId = "serfHealth",
+                name = "Serf Health Status",
+                status = "passing",
+                notes = "",
+                output = "Agent alive and reachable",
+                serviceId = "",
+                serviceName = "",
+                createIndex = Some(4),
+                modifyIndex = Some(4)
+              ))
+            )
         }
 
       }
 
-      "given a GET /v1/event/list response" in {
+      "given a GET /v1/health/state/:state" in {
 
         val jsonData =
           """
             |[
             |  {
-            |    "ID": "f07f3fcc-4b7d-3a7c-6d1e-cf414039fcee",
-            |    "Name": "web-deploy",
-            |    "Payload": "MTYwOTAzMA==",
-            |    "NodeFilter": "",
-            |    "ServiceFilter": "",
-            |    "TagFilter": "",
-            |    "Version": 1,
-            |    "LTime": 18
-            |  }
-            |]
-          """.stripMargin
-
-        inside(Json.parse(jsonData).asOpt[List[AgentEventResponse]]) {
-          case Some(list) =>
-            list.head.id shouldBe "f07f3fcc-4b7d-3a7c-6d1e-cf414039fcee"
-            list.head.ltime shouldBe 18L
-        }
-
-      }
-
-      "given a GET /v1/catalog/nodes response" in {
-
-        val jsonData =
-          """
-            |[
-            |  {
-            |    "Node": "nyc1-consul-1",
-            |    "Address": "192.241.159.115"
-            |  },
-            |  {
-            |    "Node": "nyc1-consul-2",
-            |    "Address": "192.241.158.205"
-            |  },
-            |  {
-            |    "Node": "nyc1-consul-3",
-            |    "Address": "198.199.77.133"
-            |  },
-            |  {
-            |    "Node": "nyc1-worker-1",
-            |    "Address": "162.243.162.228"
-            |  },
-            |  {
-            |    "Node": "nyc1-worker-2",
-            |    "Address": "162.243.162.226"
-            |  },
-            |  {
-            |    "Node": "nyc1-worker-3",
-            |    "Address": "162.243.162.229"
-            |  }
-            |]
-          """.stripMargin
-
-        inside(Json.parse(jsonData).asOpt[List[AgentNodeResponse]]) {
-          case Some(list) =>
-            list.head.node shouldBe "nyc1-consul-1"
-            list.last.node shouldBe "nyc1-worker-3"
-            list.last.address shouldBe "162.243.162.229"
-        }
-
-      }
-
-      "given a GET /v1/health/state/ reponse" in {
-
-        val jsonData =
-          """
-            |[
-            |  {
-            |    "Node": "foobar",
-            |    "CheckID": "service:redis",
-            |    "Name": "Service 'redis' check",
+            |    "Node": "support-node",
+            |    "CheckID": "service:support-service.1",
+            |    "Name": "Service 'support-service' check",
             |    "Status": "passing",
             |    "Notes": "",
-            |    "Output": "",
-            |    "ServiceID": "redis",
-            |    "ServiceName": "redis"
+            |    "Output": "1",
+            |    "ServiceID": "support-service.1",
+            |    "ServiceName": "support-service",
+            |    "CreateIndex": 6,
+            |    "ModifyIndex": 9
             |  }
             |]
           """.stripMargin
 
-        inside(Json.parse(jsonData).asOpt[List[AgentCheckResponse]]) {
+        inside(Json.parse(jsonData).asOpt[List[ConsulModelHealthCheck]]) {
           case Some(list) =>
-            list.head.node shouldBe "foobar"
-            list.last.name shouldBe "Service 'redis' check"
-            list.last.status shouldBe "passing"
+            list.head shouldBe ConsulModelHealthCheck(
+              node = "support-node",
+              checkId = "service:support-service.1",
+              name = "Service 'support-service' check",
+              status = "passing",
+              notes = "",
+              output = "1",
+              serviceId = "support-service.1",
+              serviceName = "support-service",
+              createIndex = Some(6),
+              modifyIndex = Some(9)
+            )
         }
-
-      }
-
-      "given a GET /v1/kv/ response" in {
-
-        val jsonData =
-          """
-            |[
-            |  {
-            |    "Key": "foo/bar",
-            |    "CreateIndex": 1796,
-            |    "ModifyIndex": 1796,
-            |    "LockIndex": 0,
-            |    "Flags": 0,
-            |    "Value": "TU9BUg==",
-            |    "Session": ""
-            |  },
-            |  {
-            |    "Key": "foo/baz",
-            |    "CreateIndex": 1795,
-            |    "ModifyIndex": 1795,
-            |    "LockIndex": 0,
-            |    "Flags": 0,
-            |    "Value": "YXNkZg==",
-            |    "Session": ""
-            |  },
-            |  {
-            |    "Key": "foo/test",
-            |    "CreateIndex": 1793,
-            |    "ModifyIndex": 1793,
-            |    "LockIndex": 0,
-            |    "Flags": 0,
-            |    "Value": "aGV5",
-            |    "Session": ""
-            |  }
-            |]
-          """.stripMargin
-
-        inside(Json.parse(jsonData).asOpt[List[AgentKeyResponse]]) {
-          case Some(list) =>
-            list.head.createIndex shouldBe 1796L
-            list.last.value shouldBe "aGV5"
-            list.last.key shouldBe "foo/test"
-        }
-
       }
 
     }

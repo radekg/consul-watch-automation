@@ -1,3 +1,8 @@
 .DS_Store
 .idea
 target
+support/consul/*
+!support/consul/.gitkeep
+support/consul-config-dir/*
+!support/consul-config-dir/consul-config.json
+support/passthru-watch/output.log
