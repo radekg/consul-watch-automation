@@ -6,6 +6,7 @@ SERVICE_NAME="support-service"
 CONSUL_CONFIG_DIR=$base/consul-config-dir
 
 INSTALL_CHECKS=false
+INSTALL_SERVICES=true
 
 WATCH_SERVICE=true
 WATCH_KEY=false
@@ -14,13 +15,6 @@ WATCH_SERVICES=true
 WATCH_NODES=true
 WATCH_CHECKS=false
 WATCH_EVENT=true
-
-rm -rf $base/consul/raft
-rm -rf $base/consul/serf
-rm -rf $base/consul/checkpoint-signature
-rm -rf $base/consul/node-id
-
-rm -rf $CONSUL_CONFIG_DIR/watch-*
 
 if [ "$WATCH_SERVICE" = "true" ]; then
     tee $CONSUL_CONFIG_DIR/watch-service.json <<EOF
@@ -117,22 +111,24 @@ if [ "$INSTALL_CHECKS" = "true" ]; then
 EOF
 fi
 
-tee $base/service-support-service.json <<EOF
-{
-  "service": {
-    "id": "$SERVICE_NAME.1",
-    "name": "$SERVICE_NAME",
-    "port": 0,
-    "address": "127.0.0.1",
-    "tags": [],
-    "checks": [
-      {
-        "script": "echo 1",
-        "interval": "1m"
+if [ "$INSTALL_SERVICES" = "true" ]; then
+    tee $CONSUL_CONFIG_DIR/service-support-service.json <<EOF
+    {
+      "service": {
+        "id": "$SERVICE_NAME.1",
+        "name": "$SERVICE_NAME",
+        "port": 0,
+        "address": "127.0.0.1",
+        "tags": [],
+        "checks": [
+          {
+            "script": "echo 1",
+            "interval": "1m"
+          }
+        ]
       }
-    ]
-  }
-}
+    }
 EOF
+fi
 
-$base/consul/consul agent --config-dir $base/consul-config-dir
+$base/consul/consul agent --config-dir $CONSUL_CONFIG_DIR/consul-config-dir
