@@ -24,13 +24,18 @@ case class Server() {
   def maybeConfiguration(): Option[Configuration] = configuration
 
   def start(config: Option[Config] = None): Unit = {
-    val cfgInst = Configuration(config.getOrElse(ConfigFactory.load().resolve()))
-    configuration = Some(cfgInst)
-    log.info(s"Starting the system with configuration: ${configuration}")
-    system.actorOf(Props(new HttpActor(cfgInst)))
+    maybeConfiguration().headOption match {
+      case Some(_) => log.debug("Server already started.")
+      case None =>
+        val cfgInst = Configuration(config.getOrElse(ConfigFactory.load().resolve()))
+        configuration = Some(cfgInst)
+        log.info(s"Starting the system with configuration: ${configuration}")
+        system.actorOf(Props(new HttpActor(cfgInst)))
+    }
   }
 
   def stop(): Unit = {
+    configuration = None
     log.info("Stopping the system...")
     system.terminate() match {
       case _ =>
