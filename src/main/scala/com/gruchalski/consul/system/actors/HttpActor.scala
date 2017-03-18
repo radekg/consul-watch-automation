@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.gruchalski.consul.models._
+import com.gruchalski.consul.system.config.Configuration
 import play.api.libs.json.{Json, Reads, Writes}
 
 import scala.concurrent.Future
@@ -19,7 +20,7 @@ object HttpActorUtils {
   final case class State(val f: Option[Future[Http.ServerBinding]])
 }
 
-class HttpActor extends Actor
+class HttpActor(val config: Configuration) extends Actor
   with ActorLogging
   with ConsulModelNodeParser
   with ConsulModelKvParser
@@ -51,7 +52,7 @@ class HttpActor extends Actor
           // process the data here...
           HttpResponse(StatusCodes.OK)
         case Right(cause) =>
-          HttpResponse(StatusCodes.BadRequest, entity=cause.getMessage)
+          HttpResponse(StatusCodes.NotFound, entity=cause.getMessage)
       })
 
     case r: HttpRequest =>
@@ -69,7 +70,9 @@ class HttpActor extends Actor
 
   def unbound(state: HttpActorUtils.State): Receive = {
     case HttpActorUtils.Bind() =>
-      val bindingFuture = Http().bindAndHandleAsync(requestHandler, "localhost", 8080)
+      val bindingFuture = Http().bindAndHandleAsync(requestHandler,
+        config.`com.gruchalski.consul.bind.host`,
+        config.`com.gruchalski.consul.bind.port`)
       log.info("Server bound...")
       context.become(bound(state.copy(f = Some(bindingFuture))))
   }

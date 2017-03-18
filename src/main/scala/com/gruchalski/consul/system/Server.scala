@@ -4,6 +4,8 @@ import akka.actor.{ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.gruchalski.consul.system.actors.HttpActor
+import com.gruchalski.consul.system.config.Configuration
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.duration._
@@ -17,8 +19,15 @@ case class Server() {
 
   private val log = Logger(getClass)
 
-  def start(): Unit = {
-    system.actorOf(Props(new HttpActor))
+  private var configuration: Option[Configuration] = None
+
+  def maybeConfiguration(): Option[Configuration] = configuration
+
+  def start(config: Option[Config] = None): Unit = {
+    val cfgInst = Configuration(config.getOrElse(ConfigFactory.load().resolve()))
+    configuration = Some(cfgInst)
+    log.info(s"Starting the system with configuration: ${configuration}")
+    system.actorOf(Props(new HttpActor(cfgInst)))
   }
 
   def stop(): Unit = {
