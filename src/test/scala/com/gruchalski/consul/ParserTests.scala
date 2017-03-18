@@ -2,8 +2,9 @@ package com.gruchalski.consul
 
 import java.io.FileInputStream
 
-import com.gruchalski.consul.Exceptions.{NoRolesException, UseOfUndefinedVariableException}
+import com.gruchalski.consul.parser.Exceptions.{NoRolesException, UseOfUndefinedVariableException}
 import com.gruchalski.consul.cdf.{ConsulWatchIntegrationLexer, ConsulWatchIntegrationParser}
+import com.gruchalski.consul.parser._
 import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream}
 import org.scalatest.{Matchers, WordSpec}
 

@@ -1,11 +1,11 @@
-package com.gruchalski.consul
+package com.gruchalski.consul.parser
 
 import java.io.InputStream
 
-import com.gruchalski.consul.Exceptions._
 import com.gruchalski.consul.cdf.ConsulWatchIntegrationParser._
 import com.gruchalski.consul.cdf.{ConsulWatchIntegrationLexer, ConsulWatchIntegrationParser}
-import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream, ParserRuleContext}
+import com.gruchalski.consul.parser.Exceptions.{CdfParserException, NoRolesException, UnsupportedScopeException, UseOfUndefinedVariableException}
+import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream}
 import org.apache.commons.lang3.StringEscapeUtils
 
 import scala.collection.JavaConverters._

@@ -1,6 +1,4 @@
-package com.gruchalski.consul
-
-import java.util
+package com.gruchalski.consul.parser
 
 object ConsulSupportedScopes {
   val envScope = "env"
