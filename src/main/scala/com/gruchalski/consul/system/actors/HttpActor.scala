@@ -7,8 +7,9 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.gruchalski.consul.models._
+import com.gruchalski.consul.system.actors.HttpActorUtils.Exceptions.JsonParseFailed
 import com.gruchalski.consul.system.config.Configuration
-import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.json.{Json, Reads}
 
 import scala.concurrent.Future
 import scala.util.{Success, Try}
@@ -18,15 +19,18 @@ object HttpActorUtils {
   final case class Bind() extends Protocol
 
   final case class State(val f: Option[Future[Http.ServerBinding]])
+
+  object Exceptions {
+    case class UnknownWatchType(val message: String) extends Exception(message)
+    case class InvalidInput(val message: String) extends Exception(message)
+    case class InvalidContentType(val message: String) extends Exception(message)
+    case class JsonParseFailed(val message: String) extends Exception(message)
+  }
 }
 
 class HttpActor(val config: Configuration) extends Actor
   with ActorLogging
-  with ConsulModelNodeParser
-  with ConsulModelKvParser
-  with ConsulModelHealthCheckParser
-  with ConsulModelServiceHealthCheckParser
-  with ConsulModelEventParser {
+  with JsonSupport {
 
   implicit val system = context.system
   implicit val executionContext = context.dispatcher
@@ -46,13 +50,20 @@ class HttpActor(val config: Configuration) extends Actor
         Uri.Path("/watch/event") -> handleEntity[List[ConsulModelEvent]] _,
         Uri.Path("/watch/service") -> handleEntity[List[ConsulModelServiceHealthCheck]] _
       ).getOrElse(uri.path, (e: HttpEntity) => {
-        Future { Right(new RuntimeException("Unknown watch type.")) }
+        Future { Right(HttpActorUtils.Exceptions.UnknownWatchType("Unknown watch type.")) }
       })(entity).map({
         case Left(data) =>
           // process the data here...
           HttpResponse(StatusCodes.OK)
         case Right(cause) =>
-          HttpResponse(StatusCodes.NotFound, entity=cause.getMessage)
+          val status = cause match {
+            case _: HttpActorUtils.Exceptions.UnknownWatchType   => StatusCodes.NotFound
+            case _: HttpActorUtils.Exceptions.InvalidInput       => StatusCodes.BadRequest
+            case _: HttpActorUtils.Exceptions.InvalidContentType => StatusCodes.BadRequest
+            case _: HttpActorUtils.Exceptions.JsonParseFailed    => StatusCodes.InternalServerError
+            case anyOther                                        => StatusCodes.InternalServerError
+          }
+          HttpResponse(status, entity=cause.getMessage)
       })
 
     case r: HttpRequest =>
@@ -92,13 +103,13 @@ class HttpActor(val config: Configuration) extends Actor
               }
             case None =>
               Future {
-                Right(new RuntimeException("Input could not be parsed to the format expected by the URI."))
+                Right(HttpActorUtils.Exceptions.InvalidInput("Input could not be parsed to the format expected by the URI."))
               }
           }
         } else {
-          Future { Right(new RuntimeException("Request not application/json.")) }
+          Future { Right(HttpActorUtils.Exceptions.InvalidContentType("Request not application/json.")) }
         }
-      }.getOrElse(Future { Right(new RuntimeException("Error while parsing JSON.")) })
+      }.getOrElse(Future { Right(JsonParseFailed("Error while parsing JSON.")) })
     }
   }
 

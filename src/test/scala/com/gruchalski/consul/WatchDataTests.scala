@@ -7,11 +7,7 @@ import play.api.libs.json.Json
 class WatchDataTests extends WordSpec
   with Matchers
   with Inside
-  with ConsulModelNodeParser
-  with ConsulModelServiceHealthCheckParser
-  with ConsulModelEventParser
-  with ConsulModelKvParser
-  with ConsulModelHealthCheckParser {
+  with JsonSupport {
 
   "Watch data" must {
     "parse watch event info" when {
