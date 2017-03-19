@@ -1,4 +1,4 @@
-package com.gruchalski.consul
+package com.gruchalski.consul.parser
 
 import org.antlr.v4.runtime.ParserRuleContext
 
