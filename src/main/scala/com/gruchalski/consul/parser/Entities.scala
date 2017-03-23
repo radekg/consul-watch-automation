@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Rad Gruchalski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.gruchalski.consul.parser
 
 object ConsulSupportedScopes {
@@ -29,28 +45,40 @@ sealed trait ConsulWatchAction
 
 final case class ExecAction(val path: String, val onlyIf: Option[String] = None) extends ConsulWatchAction
 
-final case class SystemServiceAction(val action: SystemServiceActions.Action,
-                                     val serviceName: String)
-  extends ConsulWatchAction
+final case class SystemServiceAction(
+  val action: SystemServiceActions.Action,
+  val serviceName: String
+)
+    extends ConsulWatchAction
 
-final case class CreateConsulServiceAction(val serviceName: String,
-                                           val params: Map[String, Any] = Map.empty[String, Any])
-  extends ConsulWatchAction
-final case class TemplateAction(val source: String,
-                                val destination: String,
-                                val params: Map[String, Any] = Map.empty[String, Any],
-                                val via: Option[ExecAction] = None)
-  extends ConsulWatchAction
+final case class CreateConsulServiceAction(
+  val serviceName: String,
+  val params: Map[String, Any] = Map.empty[String, Any]
+)
+    extends ConsulWatchAction
+final case class TemplateAction(
+  val source: String,
+  val destination: String,
+  val params: Map[String, Any] = Map.empty[String, Any],
+  val via: Option[ExecAction] = None
+)
+    extends ConsulWatchAction
 
-case class ConsulServiceWatchRestriction(val role: Option[String],
-                                         val actions: List[ConsulWatchAction] = List.empty[ConsulWatchAction])
+case class ConsulServiceWatchRestriction(
+  val role: Option[String],
+  val actions: List[ConsulWatchAction] = List.empty[ConsulWatchAction]
+)
 
-case class ConsulServiceWatch(val count: Int,
-                              val service: String,
-                              val scopes: Map[Option[String], ConsulServiceWatchRestriction] = Map.empty[Option[String], ConsulServiceWatchRestriction])
+case class ConsulServiceWatch(
+  val count: Int,
+  val service: String,
+  val scopes: Map[Option[String], ConsulServiceWatchRestriction] = Map.empty[Option[String], ConsulServiceWatchRestriction]
+)
 
 case class LogDirective(val path: String)
 
-case class ProgramTree(val roles: List[String],
-                       val consulWatchTriggers: Map[Tuple2[Int, String], ConsulServiceWatch],
-                       val log: Option[LogDirective] = None)
+case class ProgramTree(
+  val roles: List[String],
+  val consulWatchTriggers: Map[Tuple2[Int, String], ConsulServiceWatch],
+  val log: Option[LogDirective] = None
+)

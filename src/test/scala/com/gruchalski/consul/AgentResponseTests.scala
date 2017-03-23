@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Rad Gruchalski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.gruchalski.consul
 
 import com.gruchalski.consul.models._
@@ -5,15 +21,15 @@ import org.scalatest.{Inside, Matchers, WordSpec}
 import play.api.libs.json.Json
 
 class AgentResponseTests extends WordSpec
-  with Matchers
-  with ConsulModelEventParser
-  with ConsulModelKvParser
-  with ConsulModelHealthCheckParser
-  with ConsulModelServiceHealthCheckParser
-  with ConsulModelNodeParser
-  with ConsulModelNodeExtendedParser
-  with ConsulModelServiceParser
-  with Inside {
+    with Matchers
+    with ConsulModelEventParser
+    with ConsulModelKvParser
+    with ConsulModelHealthCheckParser
+    with ConsulModelServiceHealthCheckParser
+    with ConsulModelNodeParser
+    with ConsulModelNodeExtendedParser
+    with ConsulModelServiceParser
+    with Inside {
 
   "Agent response" must {
 
@@ -398,20 +414,19 @@ class AgentResponseTests extends WordSpec
         inside(Json.parse(jsonData).asOpt[List[ConsulModelHealthCheck]]) {
           case Some(list) =>
             list.head shouldBe ConsulModelHealthCheck(
-                node = "support-node",
-                checkId = "service:support-service.1",
-                name = "Service 'support-service' check",
-                status = "passing",
-                notes = "",
-                output = "1",
-                serviceId = "support-service.1",
-                serviceName = "support-service",
-                createIndex = Some(6),
-                modifyIndex = Some(9)
-              )
+              node = "support-node",
+              checkId = "service:support-service.1",
+              name = "Service 'support-service' check",
+              status = "passing",
+              notes = "",
+              output = "1",
+              serviceId = "support-service.1",
+              serviceName = "support-service",
+              createIndex = Some(6),
+              modifyIndex = Some(9)
+            )
         }
       }
-
 
       "given a GET /v1/health/service/:service" in {
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Rad Gruchalski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.gruchalski.consul.parser
 
 import java.io.InputStream
@@ -15,7 +31,7 @@ object ParserHelpers {
 
   def unquote(str: String): String = {
     if (str.startsWith("\"") && str.endsWith("\"")) {
-      return str.substring(1, str.length-1)
+      return str.substring(1, str.length - 1)
     }
     str
   }
@@ -26,8 +42,10 @@ object ParserHelpers {
   }
 }
 
-class Parser(val localVars: Map[String, String] = Map.empty[String, String],
-             val environment: Map[String, String] = Map.empty[String, String]) {
+class Parser(
+    val localVars: Map[String, String] = Map.empty[String, String],
+    val environment: Map[String, String] = Map.empty[String, String]
+) {
 
   private def unpackScopedVariable(ctx: ScopedVariableContext): String = {
     ctx.id().asScala.toList match {
@@ -76,7 +94,8 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
     ProgramTree(
       roles = roles,
       log = Try(Some(parseLogDirective(ctx.logDirective()))).getOrElse(None),
-      consulWatchTriggers = ctx.consulServiceChange().asScala.toList.map(parseConsulServiceChange(_)).reduce(_ ++ _) )
+      consulWatchTriggers = ctx.consulServiceChange().asScala.toList.map(parseConsulServiceChange(_)).reduce(_ ++ _)
+    )
   }
 
   def parseRole(ctx: RoleContext): String = {
@@ -172,7 +191,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
 
   def parseExec(ctx: ExecContext): ExecAction = {
     ctx.children.asScala.toList match {
-      case _ :: path  :: rest =>
+      case _ :: path :: rest =>
         var pathValue = path match {
           case stringValue: StringLiteralContext =>
             ParserHelpers.expandStringLiteral(stringValue.STRING_LITERAL().getText)
@@ -197,7 +216,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
 
   def parseOnlyIf(ctx: OnlyIfContext): String = {
     ctx.children.asScala.toList match {
-      case _ :: path  :: rest =>
+      case _ :: path :: rest =>
         var pathValue = path match {
           case stringValue: StringLiteralContext =>
             ParserHelpers.expandStringLiteral(stringValue.STRING_LITERAL().getText)
@@ -212,7 +231,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
 
   def parseSystemService(ctx: SystemServiceContext): SystemServiceAction = {
     ctx.children.asScala.toList match {
-      case action :: service  :: _ =>
+      case action :: service :: _ =>
         var serviceValue = service match {
           case stringValue: StringLiteralContext =>
             ParserHelpers.expandStringLiteral(stringValue.STRING_LITERAL().getText)
@@ -291,7 +310,7 @@ class Parser(val localVars: Map[String, String] = Map.empty[String, String],
           }
         }
 
-        TemplateAction(sourceValue, destinationValue, params=bodies.headOption.getOrElse(Map.empty[String, Any]), via=vias.headOption)
+        TemplateAction(sourceValue, destinationValue, params = bodies.headOption.getOrElse(Map.empty[String, Any]), via = vias.headOption)
       case _ =>
         throw CdfParserException(s"Invalid template clause.", Exceptions.errorContext(ctx))
     }
@@ -379,7 +398,10 @@ object Parser {
     val prog = new ConsulWatchIntegrationParser(
       new CommonTokenStream(
         new ConsulWatchIntegrationLexer(
-          new ANTLRInputStream(is)))).prog()
+          new ANTLRInputStream(is)
+        )
+      )
+    ).prog()
     new Parser(localVars, environment).parseProg(prog)
   }
 

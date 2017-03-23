@@ -1,19 +1,35 @@
+/*
+ * Copyright 2017 Rad Gruchalski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.gruchalski.consul.system.actors
 
 import akka.actor.{Actor, ActorLogging}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpMethods.POST
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.ActorMaterializer
 import com.gruchalski.consul.models._
 import com.gruchalski.consul.system.actors.HttpActorUtils.Exceptions.JsonParseFailed
 import com.gruchalski.consul.system.config.Configuration
 import play.api.libs.json.{Json, Reads}
 
 import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.util.Try
 
 object HttpActorUtils {
   sealed trait Protocol
@@ -32,8 +48,8 @@ object HttpActorUtils {
 }
 
 class HttpActor(val config: Configuration) extends Actor
-  with ActorLogging
-  with JsonSupport {
+    with ActorLogging
+    with JsonSupport {
 
   implicit val system = context.system
   implicit val executionContext = context.dispatcher
@@ -53,22 +69,22 @@ class HttpActor(val config: Configuration) extends Actor
         Uri.Path("/watch/event") -> handleEntity[List[ConsulModelEvent]] _,
         Uri.Path("/watch/service") -> handleEntity[List[ConsulModelServiceHealthCheck]] _
       ).getOrElse(uri.path, (e: HttpEntity, h: Seq[HttpHeader]) => {
-        Future { Right(HttpActorUtils.Exceptions.UnknownWatchType("Unknown watch type.")) }
-      })(entity, headers).map({
-        case Left(data) =>
-          // process the data here...
-          HttpResponse(StatusCodes.OK)
-        case Right(cause) =>
-          val status = cause match {
-            case _: HttpActorUtils.Exceptions.UnknownWatchType       ⇒ StatusCodes.NotFound
-            case _: HttpActorUtils.Exceptions.InvalidInput           ⇒ StatusCodes.BadRequest
-            case _: HttpActorUtils.Exceptions.InvalidContentType     ⇒ StatusCodes.BadRequest
-            case _: HttpActorUtils.Exceptions.AuthenticatonException ⇒ StatusCodes.Unauthorized
-            case _: HttpActorUtils.Exceptions.JsonParseFailed        ⇒ StatusCodes.InternalServerError
-            case anyOther                                            ⇒ StatusCodes.InternalServerError
-          }
-          HttpResponse(status, entity=cause.getMessage)
-      })
+          Future { Right(HttpActorUtils.Exceptions.UnknownWatchType("Unknown watch type.")) }
+        })(entity, headers).map({
+          case Left(data) =>
+            // process the data here...
+            HttpResponse(StatusCodes.OK)
+          case Right(cause) =>
+            val status = cause match {
+              case _: HttpActorUtils.Exceptions.UnknownWatchType       ⇒ StatusCodes.NotFound
+              case _: HttpActorUtils.Exceptions.InvalidInput           ⇒ StatusCodes.BadRequest
+              case _: HttpActorUtils.Exceptions.InvalidContentType     ⇒ StatusCodes.BadRequest
+              case _: HttpActorUtils.Exceptions.AuthenticatonException ⇒ StatusCodes.Unauthorized
+              case _: HttpActorUtils.Exceptions.JsonParseFailed        ⇒ StatusCodes.InternalServerError
+              case anyOther                                            ⇒ StatusCodes.InternalServerError
+            }
+            HttpResponse(status, entity = cause.getMessage)
+        })
 
     case r: HttpRequest =>
       Future {
@@ -85,9 +101,11 @@ class HttpActor(val config: Configuration) extends Actor
 
   def unbound(state: HttpActorUtils.State): Receive = {
     case HttpActorUtils.Bind() =>
-      val bindingFuture = Http().bindAndHandleAsync(requestHandler,
+      val bindingFuture = Http().bindAndHandleAsync(
+        requestHandler,
         config.`com.gruchalski.consul.bind.host`,
-        config.`com.gruchalski.consul.bind.port`)
+        config.`com.gruchalski.consul.bind.port`
+      )
       log.info("Server bound...")
       context.become(bound(state.copy(f = Some(bindingFuture))))
   }
