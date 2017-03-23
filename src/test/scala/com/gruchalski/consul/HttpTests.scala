@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Rad Gruchalski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.gruchalski.consul
 
 import java.net.ServerSocket
@@ -24,8 +40,7 @@ import scala.util.Try
 
 case class RequestExecutor(port: Int) {
 
-  def entityExecute(entity: RequestEntity, path: Path, method: HttpMethod, expectedStatus: StatusCode, headers: Seq[HttpHeader] = Seq.empty[HttpHeader])
-                   (implicit system: ActorSystem, materializer: ActorMaterializer): Future[Either[String, String]] =
+  def entityExecute(entity: RequestEntity, path: Path, method: HttpMethod, expectedStatus: StatusCode, headers: Seq[HttpHeader] = Seq.empty[HttpHeader])(implicit system: ActorSystem, materializer: ActorMaterializer): Future[Either[String, String]] =
     Source.single(HttpRequest(
       uri = Uri(path = path),
       method = method,
@@ -37,12 +52,10 @@ case class RequestExecutor(port: Int) {
       }
     }).runWith(Sink.head)
 
-  def dataExecute(data: String, path: Path, method: HttpMethod, expectedStatus: StatusCode, headers: Seq[HttpHeader] = Seq.empty[HttpHeader])
-                 (implicit system: ActorSystem, materializer: ActorMaterializer): Future[Either[String, String]] =
+  def dataExecute(data: String, path: Path, method: HttpMethod, expectedStatus: StatusCode, headers: Seq[HttpHeader] = Seq.empty[HttpHeader])(implicit system: ActorSystem, materializer: ActorMaterializer): Future[Either[String, String]] =
     entityExecute(HttpEntity(ContentType(MediaTypes.`application/json`), data), path, method, expectedStatus, headers)
 
-  def postJsonExecute(json: JsValue, path: Path, expectedStatus: StatusCode, headers: Seq[HttpHeader] = Seq.empty[HttpHeader])
-                     (implicit system: ActorSystem, materializer: ActorMaterializer): Future[Either[String, String]] =
+  def postJsonExecute(json: JsValue, path: Path, expectedStatus: StatusCode, headers: Seq[HttpHeader] = Seq.empty[HttpHeader])(implicit system: ActorSystem, materializer: ActorMaterializer): Future[Either[String, String]] =
     dataExecute(json.toString(), path, HttpMethods.POST, expectedStatus, headers)
 
 }
@@ -89,14 +102,18 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
             value = "c29tZS1kYXRh",
             createIndex = 28,
             modifyIndex = 28,
-            session = Some("")))
+            session = Some("")
+          )
+        )
         server.maybeConfiguration().map { config =>
           Await.result(
             RequestExecutor(config.`com.gruchalski.consul.bind.port`).postJsonExecute(
               data,
               Path("/watch/key"),
               StatusCodes.Unauthorized,
-              List.empty[HttpHeader]), 1 second) should matchPattern { case Left(_) => }
+              List.empty[HttpHeader]
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -109,14 +126,18 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
             value = "c29tZS1kYXRh",
             createIndex = 28,
             modifyIndex = 28,
-            session = Some("")))
+            session = Some("")
+          )
+        )
         server.maybeConfiguration().map { config =>
           Await.result(
             RequestExecutor(config.`com.gruchalski.consul.bind.port`).postJsonExecute(
               data,
               Path("/watch/key"),
               StatusCodes.Unauthorized,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`+"invalid")))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token` + "invalid")))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -133,7 +154,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Path("/non/existing/uri"),
               HttpMethods.GET,
               StatusCodes.NotFound,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
 
       }
@@ -145,7 +168,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"json": "data"}"""),
               Path("/watch/unknown-type"),
               StatusCodes.NotFound,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -160,7 +185,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/nodes"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -171,7 +198,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/services"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -182,7 +211,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/service"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -193,7 +224,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/key"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -204,7 +237,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/keyprefix"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -215,7 +250,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/checks"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -226,7 +263,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Json.parse("""{"not": "valid", "for": "this", "request": []}"""),
               Path("/watch/event"),
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -238,7 +277,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               Path("/watch/nodes"),
               HttpMethods.POST,
               StatusCodes.BadRequest,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -266,20 +307,26 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               data,
               Path("/watch/nodes"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
       "given a valid /watch/services request" in {
-        val data = Json.toJson(Map("consul" -> List.empty[String],
-          "support-service" -> List.empty[String]))
+        val data = Json.toJson(Map(
+          "consul" -> List.empty[String],
+          "support-service" -> List.empty[String]
+        ))
         server.maybeConfiguration().map { config =>
           Await.result(
             RequestExecutor(config.`com.gruchalski.consul.bind.port`).postJsonExecute(
               data,
               Path("/watch/services"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -322,7 +369,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               data,
               Path("/watch/service"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -344,7 +393,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               data,
               Path("/watch/key"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -368,7 +419,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               data,
               Path("/watch/keyprefix"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -393,7 +446,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               data,
               Path("/watch/checks"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 
@@ -418,7 +473,9 @@ class HttpTests extends WordSpec with Matchers with BeforeAndAfterAll with JsonS
               data,
               Path("/watch/event"),
               StatusCodes.OK,
-              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))), 1 second) should matchPattern { case Left(_) => }
+              List(Authorization(OAuth2BearerToken(config.`com.gruchalski.consul.access-token`)))
+            ), 1 second
+          ) should matchPattern { case Left(_) => }
         }.orElse(fail("Expected configuration in the server."))
       }
 

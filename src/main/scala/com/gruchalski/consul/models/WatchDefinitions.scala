@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Rad Gruchalski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.gruchalski.consul.models
 
 import play.api.libs.functional.syntax._
@@ -22,46 +38,53 @@ object WatchDefinitionUtils {
       try {
         val obj = json.asInstanceOf[JsObject]
 
-        ( obj \ "type" ).asOpt[String] match {
+        (obj \ "type").asOpt[String] match {
           case Some(v) if v == "key" =>
             Try(JsSuccess(
               WatchDefinitionKey(
                 (obj \ "key").as[String],
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch key definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch key definition."))
           case Some(v) if v == "keyprefix" =>
             Try(JsSuccess(
               WatchDefinitionKeyprefix(
                 (obj \ "prefix").as[String],
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch keyprefix definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch keyprefix definition."))
           case Some(v) if v == "services" =>
             Try(JsSuccess(
               WatchDefinitionServices(
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch services definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch services definition."))
           case Some(v) if v == "nodes" =>
             Try(JsSuccess(
               WatchDefinitionNodes(
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch nodes definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch nodes definition."))
           case Some(v) if v == "service" =>
             Try(JsSuccess(
               WatchDefinitionService(
                 (obj \ "service").as[String],
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch service definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch service definition."))
           case Some(v) if v == "checks" =>
             Try(JsSuccess(
               WatchDefinitionChecks(
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch checks definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch checks definition."))
           case Some(v) if v == "event" =>
             Try(JsSuccess(
               WatchDefinitionEvent(
                 (obj \ "name").as[String],
-                (obj \ "handler").as[String] ) )
-            ).getOrElse(JsError("Failed to parse watch event definition."))
+                (obj \ "handler").as[String]
+              )
+            )).getOrElse(JsError("Failed to parse watch event definition."))
           case Some(anyOther) =>
             JsError(s"Unsupported WatchDefinition.type: $anyOther. Supported types: key, keyprefix, services, nodes, service, checks, event.")
           case None =>
@@ -74,41 +97,48 @@ object WatchDefinitionUtils {
     }
   }
 
-  def watchDefinitionWrites[ E <: WatchDefinition ]: Writes[WatchDefinition] = new Writes[WatchDefinition] {
+  def watchDefinitionWrites[E <: WatchDefinition]: Writes[WatchDefinition] = new Writes[WatchDefinition] {
     def writes(v: WatchDefinition): JsValue = {
       v match {
         case WatchDefinitionKey(key, handler) =>
           JsObject(List(
             ("type", JsString("key")),
             ("key", JsString(key)),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case WatchDefinitionKeyprefix(prefix, handler) =>
           JsObject(List(
             ("type", JsString("keyprefix")),
             ("prefix", JsString(prefix)),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case WatchDefinitionServices(handler) =>
           JsObject(List(
             ("type", JsString("services")),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case WatchDefinitionService(service, handler) =>
           JsObject(List(
             ("type", JsString("service")),
             ("service", JsString(service)),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case WatchDefinitionNodes(handler) =>
           JsObject(List(
             ("type", JsString("nodes")),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case WatchDefinitionChecks(handler) =>
           JsObject(List(
             ("type", JsString("checks")),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case WatchDefinitionEvent(name, handler) =>
           JsObject(List(
             ("type", JsString("event")),
             ("name", JsString(name)),
-            ("handler", JsString(handler))))
+            ("handler", JsString(handler))
+          ))
         case anyOther =>
           throw new UnsupportedOperationException("Unsupported watch definition in Json.writes.")
       }

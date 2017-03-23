@@ -4,6 +4,9 @@ version := "1.0"
 
 scalaVersion := "2.12.1"
 
+enablePlugins(AutomateHeaderPlugin)
+enablePlugins(SbtScalariform)
+
 antlr4Settings
 antlr4GenListener in Antlr4 := true
 antlr4GenVisitor in Antlr4 := false
