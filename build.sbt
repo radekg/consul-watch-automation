@@ -10,6 +10,7 @@ antlr4GenVisitor in Antlr4 := false
 antlr4PackageName in Antlr4 := Some("com.gruchalski.consul.cdf")
 
 libraryDependencies ++= DependencyGroups.akka
+libraryDependencies ++= DependencyGroups.alpakka
 libraryDependencies ++= DependencyGroups.apacheCommons
 libraryDependencies ++= DependencyGroups.logging
 libraryDependencies ++= Seq(Library.playJson)
