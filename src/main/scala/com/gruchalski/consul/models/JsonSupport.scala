@@ -5,3 +5,4 @@ trait JsonSupport extends ConsulModelNodeParser
   with ConsulModelEventParser
   with ConsulModelKvParser
   with ConsulModelHealthCheckParser
+  with WatchDefinitionsParser
